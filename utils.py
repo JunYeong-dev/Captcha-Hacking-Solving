@@ -48,7 +48,7 @@ def extract_chars(image):
         image_gray = cv2.cvtColor(image_from_one_color, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(image_gray, 127, 255, 0)
         # RETR_EXTERNAL 옵션으로 숫자의 외각을 기준으로 분리
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
 
         for contour in contours:
             # 추출된 이미지 크기가 50 이상인 경우만 실제 문자 데이터인 것으로 파악
