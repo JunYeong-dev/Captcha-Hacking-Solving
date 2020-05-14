@@ -1,6 +1,9 @@
 import numpy as np
 import cv2
 import utils
+import requests
+import shutil
+import time
 
 FILE_NAME = "trained.npz"
 
@@ -44,4 +47,46 @@ def get_result(file_name):
 
     return result_string
 
-print(get_result("1.png"))
+host = "http://localhost:10000"
+# start를 눌렀을때 접속하게 되는 url
+url = '/start'
+
+# target_images 라는 폴더 생성
+with requests.Session() as s:
+    # 첫 실행시은 단순 접속이기 때문에 답을 빈 문자열로 전송
+    answer = ''
+    # 총 20문제를 풀어야 하기 때문에
+    for i in range(0, 20):
+        # 한문제를 푸는데 걸리는 시간을 알아보기 위해 설정
+        start_time = time.time()
+        params = {'ans': answer}
+
+        # 정답을 파라미터에 달아서 전송하여, 이미지 경로를 받아옴
+        response = s.post(host + url, params)
+        print('Server Return:' + response.text)
+        # 가장 처음은 start버튼을 눌렀을 때기 때문에 따로 설정을 해줘야함
+        if i == 0:
+            returned = response.text
+            image_url = host + returned
+            url = '/check'
+        else:
+            returned = response.json()
+            image_url = host + returned['url']
+        print('Problem ' + str(i) + ': ' + image_url)
+
+        # 특정한 폴더에 문제 이미지 파일을 다운로드
+        response = s.get(image_url, stream=True)
+        target_image = './target_images/' + str(i) + '.png'
+        with open(target_image, 'wb') as out_file:
+            shutil.copyfileobj(response.raw, out_file)
+        del response
+
+        # 다운로드 받은 이미지 파일을 분석하여 답을 도출
+        # 이미지에서 문자열을 추출
+        answer_string = get_result(target_image)
+        print('String: ' + answer_string)
+        # 추출한 문자열을 정제
+        answer_string = utils.remove_first_0(answer_string)
+        answer = str(eval(answer_string))
+        print('Answer: ' + answer)
+        print("--- %s seconds ---" % (time.time() - start_time))
