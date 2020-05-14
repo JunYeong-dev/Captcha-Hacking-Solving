@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import re
 
 # 이미지 내의 문자 형태가 거의 동일하므로, 데이터를 조금만 수집해도 됨
 # 가능한 12개의 문자 : 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, +, -, x
@@ -66,3 +67,28 @@ def extract_chars(image):
 def resize20(image):
     resized = cv2.resize(image, (20, 20))
     return resized.reshape(-1, 400).astype(np.float32)
+
+# 수식 정제
+# eval() 함수를 이용하여 계산을 하는데(eval(7 + 5) => 12) 001 + 7 등과 같이 앞에
+# 0이 있으면 에러가 발생할 수 있기 때문에 수식을 정제해 줘야 함
+def remove_first_0(string):
+    temp = []
+    for i in string:
+        if i == '+' or i == '-' or i == '*':
+            temp.append(i)
+    split = re.split('\*|\+|\-', string)
+    i = 0
+    temp_count = 0
+    result = ""
+    for a in split:
+        # lstrip() : 왼쪽부터 해당하는 문자열을 지워줌
+        a = a.lstrip('0')
+        # 만약 000 과 같은 경우는 전부 지워져서 빈 문자열이 되기 때문에 0을 따로 넣어줌
+        if a == '':
+            a = '0'
+        result += a
+        if i < len(split) - 1:
+            result += temp[temp_count]
+            temp_count = temp_count + 1
+        i = i + 1
+    return result
